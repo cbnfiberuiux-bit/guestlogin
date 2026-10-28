@@ -5,7 +5,7 @@
 <title>Guest Admin</title>
 <link rel="stylesheet" href="style.css">
 <script src="config.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="qrcode.js"></script>
 </head>
 <body>
 <main>
@@ -80,10 +80,11 @@ function showQr(g) {
 form.onsubmit = async e => {
   e.preventDefault();
   const row = Object.fromEntries(new FormData(form));
-  const { error } = editing
-    ? await db.from('guests').update(row).eq('id', editing)
-    : await db.from('guests').insert(row);
+  const { data, error } = editing
+    ? await db.from('guests').update(row).eq('id', editing).select().single()
+    : await db.from('guests').insert(row).select().single();
   if (fail(error)) return;
+  showQr(data);
   editing = null; $('save').textContent = 'Tambah'; form.reset(); form.elements.name.focus(); load();
 };
 
