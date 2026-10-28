@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Guest Pass</title>
+<link rel="stylesheet" href="style.css">
+<script src="config.js"></script>
+</head>
+<body>
+<div class="screen">
+  <form id="scan"><input id="code" placeholder="Scan / ketik kode tamu" autofocus autocomplete="off"></form>
+  <div id="out" class="muted">Scan barcode tamu</div>
+</div>
+<script type="module">
+import { db } from './db.js';
+const out = document.getElementById('out'), input = document.getElementById('code');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+
+async function show(raw) {
+  // Accept a bare code or a full scanned URL (?c=CODE).
+  const code = (raw.match(/[?&]c=([^&#]+)/)?.[1] ?? raw).trim();
+  if (!code) return;
+  out.className = 'muted'; out.textContent = 'Memeriksa…';
+  const { data, error } = await db.rpc('get_guest', { p_code: code });
+  const g = data?.[0];
+  if (error || !g) { out.className = 'err'; out.textContent = error ? 'Gagal terhubung' : 'Kode tidak terdaftar'; return; }
+  out.className = `pass ${g.tier}`;
+  out.innerHTML = `<div class="tier">${g.tier}</div><div class="name">${esc(g.name)}</div>
+    <div class="company">${esc(g.company)}</div>
+    ${g.table_no ? `<div class="table">Table<b>${esc(g.table_no)}</b></div>` : ''}`;
+}
+
+document.getElementById('scan').onsubmit = e => { e.preventDefault(); show(input.value); input.value = ''; };
+document.addEventListener('click', () => input.focus());
+const c = new URLSearchParams(location.search).get('c');
+if (c) show(c);
+</script>
+</body>
+</html>
