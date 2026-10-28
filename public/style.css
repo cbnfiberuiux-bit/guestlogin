@@ -31,6 +31,6 @@ dialog img { background:#fff; padding:8px; border-radius:8px; width:240px; image
 .pass .tier { font-size:clamp(56px,14vw,120px); font-weight:900; letter-spacing:.05em; line-height:1; }
 .pass.VIP .tier { color:var(--vip); } .pass.REGULAR .tier { color:var(--reg); }
 .pass .name { font-size:clamp(28px,6vw,48px); font-weight:700; margin-top:24px; }
-.pass .company { font-size:clamp(18px,3.5vw,24px); color:var(--muted); }
+.pass .company { font-size:clamp(22px,4.5vw,32px); font-weight:600; color:var(--text); margin-top:4px; }
 .pass .table { margin-top:32px; font-size:clamp(20px,4vw,28px); }
 .pass .table b { display:block; font-size:clamp(48px,12vw,96px); line-height:1.1; }
