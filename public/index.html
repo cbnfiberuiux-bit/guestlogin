@@ -8,7 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..700,0..1,0&display=block" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script src="config.js"></script>
-<script src="JsBarcode.all.min.js"></script>
+<script src="qrcode.js"></script>
+<script src="jsQR.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -39,7 +40,7 @@
   <div style="display:flex;flex-direction:column;gap:6px">
     <span class="eyebrow">ADMIN PANEL</span>
     <h1>Data Tamu</h1>
-    <p class="lead">Tambah tamu, kirim tiket barcode, dan pantau siapa yang sudah hadir.</p>
+    <p class="lead">Tambah tamu, kirim tiket QR, dan pantau siapa yang sudah hadir.</p>
   </div>
   <div class="alert" id="adminErr" hidden><span class="i">error</span><span></span></div>
 
@@ -67,7 +68,7 @@
         <button class="btn btn-primary" id="submitBtn"><span class="i">add</span><span>Simpan tamu</span></button>
         <button type="button" class="btn btn-ghost" id="cancelEdit" hidden>Batal</button>
       </div>
-      <p class="note"><span class="i">info</span>Kode barcode unik dibuat otomatis. Tiket tidak menampilkan kategori, VIP/Regular baru terungkap di layar saat scan.</p>
+      <p class="note"><span class="i">info</span>Kode QR unik dibuat otomatis. Tiket tidak menampilkan kategori, VIP/Regular baru terungkap di layar saat scan.</p>
     </form>
 
     <section class="card list">
@@ -87,7 +88,7 @@
 <main id="checkin" class="checkin" hidden>
   <div class="col">
     <div class="scanner">
-      <div class="scan-head"><div class="ibig"><span class="i">qr_code_scanner</span></div><div><h1>Scan tiket tamu</h1><span>Scan barcode tamu pakai kamera HP, scanner, atau ketik kodenya.</span></div></div>
+      <div class="scan-head"><div class="ibig"><span class="i">qr_code_scanner</span></div><div><h1>Scan tiket tamu</h1><span>Scan QR tamu pakai kamera HP, scanner, atau ketik kodenya.</span></div></div>
       <form class="scan-form" id="scanForm"><input id="scanInput" placeholder="CBN-XXXXXXX" autocomplete="off" spellcheck="false"><button><span class="i">login</span>Check-in</button></form>
       <div class="cam-row">
         <button class="cam-on" id="camStart"><span class="i">photo_camera</span>Scan pakai kamera</button>

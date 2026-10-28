@@ -114,11 +114,10 @@ $('rows').onclick = async e => {
   }
 };
 
-// ---------- barcode & ticket ----------
-function barcodeUrl(code) {
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  JsBarcode(svg, code, { format: 'CODE128', displayValue: false, margin: 0, height: 100, width: 2, lineColor: '#0A1226', background: '#FFFFFF' });
-  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg));
+// ---------- QR & ticket ----------
+function qrUrl(code) {
+  const q = qrcode(0, 'M'); q.addData(code); q.make();
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(q.createSvgTag(8, 0));
 }
 
 function openTicket(g) {
@@ -127,7 +126,7 @@ function openTicket(g) {
       <div class="ticket">
         <div class="t-top">
           <div class="t-brand"><div class="logo">CBN</div><div><small>UNDANGAN</small><b>${esc(EVENT)}</b></div></div>
-          <div><div class="t-title">E-Ticket</div><div class="t-sub">Scan barcode ini di layar check-in saat tiba.</div></div>
+          <div><div class="t-title">E-Ticket</div><div class="t-sub">Scan QR ini di layar check-in saat tiba.</div></div>
         </div>
         <div class="t-mid">
           <div class="t-name"><span class="eyebrow">NAMA TAMU</span><b>${esc(g.name)}</b><span>${esc(g.company || 'Tanpa perusahaan')}</span></div>
@@ -137,7 +136,7 @@ function openTicket(g) {
           </div>
         </div>
         <div class="t-cut"></div>
-        <div class="t-code"><img src="${barcodeUrl(g.code)}" alt="Barcode tiket"><span class="mono">${esc(g.code)}</span></div>
+        <div class="t-code"><img src="${qrUrl(g.code)}" alt="QR tiket"><span class="mono">${esc(g.code)}</span></div>
       </div>
       <div class="t-acts">
         <button class="dl" data-act="dl">${ic('download')}Download PNG</button>
@@ -180,7 +179,7 @@ async function download(g) {
   x.fillStyle = '#DCE6FF'; x.font = `700 20px ${Fn}`; x.fillText('UNDANGAN', 212, 128);
   x.fillStyle = '#fff'; fit(EVENT, 580, 32, 700, Fn); x.fillText(EVENT, 212, 168);
   x.fillStyle = '#fff'; x.font = `800 112px ${Fn}`; x.fillText('E-Ticket', 88, 400);
-  x.fillStyle = '#DCE6FF'; x.font = `500 28px ${Fn}`; x.fillText('Scan barcode ini di layar check-in saat tiba.', 96, 460);
+  x.fillStyle = '#DCE6FF'; x.font = `500 28px ${Fn}`; x.fillText('Scan QR ini di layar check-in saat tiba.', 96, 460);
   x.fillStyle = '#5B6479'; x.font = `700 22px ${Fn}`; x.fillText('NAMA TAMU', 96, 610);
   x.fillStyle = '#0A1226'; fit(g.name, 708, 60, 800, Fn); x.fillText(g.name, 96, 680);
   if (g.company) { x.fillStyle = '#3A4459'; fit(g.company, 708, 32, 500, Fn); x.fillText(g.company, 96, 730); }
@@ -189,9 +188,9 @@ async function download(g) {
   x.fillStyle = '#0A1226'; fit(table, 640, 72, 800, Fn); x.fillText(table, 132, 905);
   x.strokeStyle = '#E3E8F0'; x.lineWidth = 3; x.setLineDash([14, 12]); x.beginPath(); x.moveTo(80, 990); x.lineTo(W - 80, 990); x.stroke(); x.setLineDash([]);
   x.fillStyle = '#EAF0FF'; x.beginPath(); x.arc(40, 990, 30, 0, Math.PI * 2); x.fill(); x.beginPath(); x.arc(W - 40, 990, 30, 0, Math.PI * 2); x.fill();
-  const im = new Image(); await new Promise(r => { im.onload = im.onerror = r; im.src = barcodeUrl(g.code); });
-  try { x.drawImage(im, 96, 1050, 708, 210); } catch {}
-  x.fillStyle = '#0A1226'; x.font = `600 30px ${M}`; x.textAlign = 'center'; x.fillText(g.code.split('').join(String.fromCharCode(8202)), W / 2, 1310);
+  const im = new Image(); await new Promise(r => { im.onload = im.onerror = r; im.src = qrUrl(g.code); });
+  try { x.imageSmoothingEnabled = false; x.drawImage(im, 320, 1020, 260, 260); } catch {}
+  x.fillStyle = '#0A1226'; x.font = `600 30px ${M}`; x.textAlign = 'center'; x.fillText(g.code.split('').join(String.fromCharCode(8202)), W / 2, 1328);
   const a = document.createElement('a'); a.download = `Tiket ${g.name} ${g.code}.png`; a.href = c.toDataURL('image/png'); a.click();
   toast('Tiket ' + g.name + ' di-download');
 }
@@ -319,19 +318,22 @@ addEventListener('keydown', e => { if (e.key === 'Escape') { dismiss(); $('ticke
 let stream, camT, lastCam, lastCamAt = 0;
 async function startCam() {
   const msg = t => { $('camMsg').hidden = !t; $('camMsg').textContent = t; };
-  if (!('BarcodeDetector' in window)) return msg('Browser ini belum mendukung scan kamera. Pakai Chrome di Android/Mac, atau scanner USB.');
   try {
     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-    const detector = new BarcodeDetector({ formats: ['qr_code', 'code_128'] });
+    // jsQR decodes frames in JS, so it works on iPhone Safari too (no BarcodeDetector there).
+    const cv = document.createElement('canvas'), cx = cv.getContext('2d', { willReadFrequently: true });
     msg(''); $('cam').hidden = $('camStop').hidden = false; $('camStart').hidden = true;
     const v = $('video'); v.srcObject = stream; v.play().catch(() => {});
-    camT = setInterval(async () => {
+    camT = setInterval(() => {
       if (v.readyState < 2 || busy || $('result').innerHTML) return;
       try {
-        const c = (await detector.detect(v))[0]?.rawValue;
+        const k = Math.min(1, 640 / Math.max(v.videoWidth, v.videoHeight));
+        cv.width = v.videoWidth * k; cv.height = v.videoHeight * k;
+        cx.drawImage(v, 0, 0, cv.width, cv.height);
+        const c = jsQR(cx.getImageData(0, 0, cv.width, cv.height).data, cv.width, cv.height, { inversionAttempts: 'dontInvert' })?.data;
         if (c && (c !== lastCam || Date.now() - lastCamAt > 4000)) { lastCam = c; lastCamAt = Date.now(); checkIn(c); }
       } catch {}
-    }, 350);
+    }, 250);
   } catch { msg('Kamera tidak bisa diakses. Cek izin kamera di browser.'); }
 }
 function stopCam() {
