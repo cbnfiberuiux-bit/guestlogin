@@ -48,7 +48,13 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 const form = $('guestForm');
 let guests = [], editing = null;
-const fail = e => { $('err').textContent = e?.message ?? ''; return e; };
+let me = '';
+const fail = e => {
+  $('err').textContent = e?.code === '42501'
+    ? `${me} belum terdaftar sebagai admin. Jalankan di Supabase SQL Editor: insert into public.admins (email) values ('${me}');`
+    : e?.message ?? '';
+  return e;
+};
 
 async function load() {
   const { data, error } = await db.from('guests').select('*').order('created_at', { ascending: false });
@@ -112,6 +118,7 @@ $('logout').onclick = () => db.auth.signOut();
 
 db.auth.onAuthStateChange((_, session) => {
   $('login').hidden = !!session; $('app').hidden = !session;
+  me = session?.user.email ?? '';
   if (session) load();
 });
 </script>
